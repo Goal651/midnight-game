@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { View, Pressable, Dimensions } from 'react-native';
+import { View, Pressable } from 'react-native';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -11,8 +11,8 @@ import Animated, {
 
 interface TargetProps {
     id: string;
-    x: number; // Screen X
-    y: number; // Screen Y
+    x: number; // Absolute screen X position in pixels
+    y: number; // Absolute screen Y position in pixels
     size: number;
     color: string;
     onHit: (id: string) => void;
@@ -24,7 +24,7 @@ export const Target: React.FC<TargetProps> = ({ id, x, y, size, color, onHit }) 
 
     useEffect(() => {
         scale.value = withSpring(1, { damping: 12, stiffness: 90 });
-    }, []);
+    }, [scale]);
 
     const handlePress = () => {
         scale.value = withTiming(1.5, { duration: 200 });
@@ -37,12 +37,6 @@ export const Target: React.FC<TargetProps> = ({ id, x, y, size, color, onHit }) 
         transform: [{ scale: scale.value }],
         opacity: opacity.value,
     }));
-
-    // Don't render if off screen
-    if (x < -size || x > Dimensions.get('window').width + size ||
-        y < -size || y > Dimensions.get('window').height + size) {
-        return null;
-    }
 
     return (
         <Animated.View

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Pressable, Dimensions } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Audio } from 'expo-av';
+import { Audio } from 'expo-audio';
 import { CameraView } from '../src/components/CameraView';
 import { Target } from '../src/components/Target';
 import { GameHUD } from '../src/components/GameHUD';
@@ -12,7 +12,7 @@ import { useTimer } from '../src/hooks/useTimer';
 import { useTargets } from '../src/hooks/useTargets';
 import { useOrientation } from '../src/hooks/useOrientation';
 
-const FOV = 60;
+const FOV = 70; // Field of view in degrees
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function GameScreen() {
@@ -20,7 +20,6 @@ export default function GameScreen() {
     const { score, incrementScore, gameState, startGame, endGame } = useGameState();
     const { targets, spawnTarget, removeTarget } = useTargets(gameState === 'playing');
     const { orientation } = useOrientation();
-    const [sound, setSound] = useState<Audio.Sound | null>(null);
     const [isShooting, setIsShooting] = useState(false);
 
     const handleTimeEnd = useCallback(() => {
@@ -41,7 +40,7 @@ export default function GameScreen() {
         if (gameState === 'playing') {
             const interval = setInterval(() => {
                 spawnTarget();
-            }, 1500); // Spawn every 1.5 seconds
+            }, 1500);
             return () => clearInterval(interval);
         }
     }, [gameState, spawnTarget]);
@@ -50,35 +49,40 @@ export default function GameScreen() {
     const playHitSound = async () => {
         try {
             const { sound } = await Audio.Sound.createAsync(
-                require('../../assets/sounds/hit.mp3')
+                require('../assets/sounds/hit.mp3')
             );
-            setSound(sound);
             await sound.playAsync();
+            // Auto-unload after playing
+            sound.setOnPlaybackStatusUpdate((status) => {
+                if (status.isLoaded && status.didJustFinish) {
+                    sound.unloadAsync();
+                }
+            });
         } catch (error) {
-            console.log('Error playing sound:', error);
+            console.log('Error playing hit sound:', error);
         }
     };
 
-    // Play shoot sound (different from hit)
     const playShootSound = async () => {
         try {
             const { sound } = await Audio.Sound.createAsync(
-                require('../../assets/sounds/shoot.mp3')
+                require('../assets/sounds/shoot.mp3')
             );
             await sound.playAsync();
+            // Auto-unload after playing
+            sound.setOnPlaybackStatusUpdate((status) => {
+                if (status.isLoaded && status.didJustFinish) {
+                    sound.unloadAsync();
+                }
+            });
         } catch (error) {
             console.log('Error playing shoot sound:', error);
         }
     };
 
-    useEffect(() => {
-        return sound ? () => { sound.unloadAsync(); } : undefined;
-    }, [sound]);
-
     const triggerShoot = () => {
         setIsShooting(true);
         playShootSound();
-        // Reset shooting state after animation
         setTimeout(() => setIsShooting(false), 100);
     };
 
@@ -100,43 +104,53 @@ export default function GameScreen() {
         });
     }, [router, score]);
 
-    // Navigate to game over when game ends
     useEffect(() => {
         if (gameState === 'ended') {
             handleGameOver();
         }
     }, [gameState, handleGameOver]);
 
-    // Project target to screen coordinates
-    const getTargetScreenPosition = (targetYaw: number, targetPitch: number) => {
+    // Project world coordinates to screen coordinates
+    const projectToScreen = (targetYaw: number, targetPitch: number) => {
+        // Calculate angular difference between camera and target
         let deltaYaw = targetYaw - orientation.yaw;
 
-        // Handle wrapping
-        if (deltaYaw > 180) deltaYaw -= 360;
-        if (deltaYaw < -180) deltaYaw += 360;
+        // Normalize to -180 to 180
+        while (deltaYaw > 180) deltaYaw -= 360;
+        while (deltaYaw < -180) deltaYaw += 360;
 
         const deltaPitch = targetPitch - orientation.pitch;
 
-        const x = (deltaYaw / (FOV / 2)) * (SCREEN_WIDTH / 2) + SCREEN_WIDTH / 2;
-        const y = (deltaPitch / (FOV / 2)) * (SCREEN_HEIGHT / 2) + SCREEN_HEIGHT / 2;
+        // Check if target is within field of view
+        const halfFOV = FOV / 2;
+        const isVisible = Math.abs(deltaYaw) < halfFOV && Math.abs(deltaPitch) < halfFOV;
 
-        return { x, y };
+        // Map angular difference to screen position
+        // Center of screen = 0 degrees offset
+        const x = (deltaYaw / halfFOV) * (SCREEN_WIDTH / 2) + (SCREEN_WIDTH / 2);
+        const y = (-deltaPitch / halfFOV) * (SCREEN_HEIGHT / 2) + (SCREEN_HEIGHT / 2);
+
+        return { x, y, isVisible };
     };
 
     return (
         <View className="flex-1">
             <CameraView>
-                {/* Full screen pressable for misses */}
                 <Pressable className="absolute inset-0" onPress={handleMiss} />
 
                 {targets.map((target) => {
-                    const { x, y } = getTargetScreenPosition(target.yaw, target.pitch);
+                    const { x, y, isVisible } = projectToScreen(target.yaw, target.pitch);
+
+                    if (!isVisible) return null;
+
                     return (
                         <Target
                             key={target.id}
-                            {...target}
+                            id={target.id}
                             x={x}
                             y={y}
+                            size={target.size}
+                            color={target.color}
                             onHit={handleTargetHit}
                         />
                     );

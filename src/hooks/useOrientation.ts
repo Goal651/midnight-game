@@ -1,50 +1,52 @@
-import { useState, useEffect } from 'react';
-import { DeviceMotion } from 'expo-sensors';
+import { useState, useEffect, useRef } from 'react';
+import { Gyroscope } from 'expo-sensors';
 
 interface Orientation {
-    yaw: number;
-    pitch: number;
+    yaw: number;   // Rotation around vertical axis (left/right)
+    pitch: number; // Rotation around horizontal axis (up/down)
 }
 
 export const useOrientation = () => {
     const [orientation, setOrientation] = useState<Orientation>({ yaw: 0, pitch: 0 });
-    const [initialOrientation, setInitialOrientation] = useState<Orientation | null>(null);
+    const yawRef = useRef(0);
+    const pitchRef = useRef(0);
+    const lastUpdateRef = useRef(Date.now());
 
     useEffect(() => {
-        // Set update interval to 16ms (approx 60fps)
-        DeviceMotion.setUpdateInterval(16);
+        Gyroscope.setUpdateInterval(16); // ~60fps
 
-        const subscription = DeviceMotion.addListener((data) => {
-            if (data.rotation) {
-                // Convert radians to degrees
-                // alpha is rotation around Z axis (yaw) - but in portrait mode, we care about beta/gamma differently
-                // For simplicity in portrait AR:
-                // alpha/gamma controls yaw (looking left/right)
-                // beta controls pitch (looking up/down)
+        const subscription = Gyroscope.addListener((data) => {
+            const now = Date.now();
+            const dt = (now - lastUpdateRef.current) / 1000; // Convert to seconds
+            lastUpdateRef.current = now;
 
-                // Note: DeviceMotion values depend on device orientation. 
-                // Assuming portrait mode for now.
+            // Integrate gyroscope data to get orientation
+            // For portrait mode on Android:
 
-                const { alpha, beta, gamma } = data.rotation;
+            // data.z = rotation around Z axis (yaw - left/right)
+            // data.x = rotation around X axis (pitch - up/down)
 
-                // Simple mapping for proof of concept
-                // alpha is 0 to 2pi
-                const currentYaw = alpha * (180 / Math.PI);
-                const currentPitch = beta * (180 / Math.PI);
+            // Convert rad/s to degrees and integrate
+            yawRef.current += data.z * (180 / Math.PI) * dt;
+            pitchRef.current += data.x * (180 / Math.PI) * dt;
 
-                if (!initialOrientation) {
-                    setInitialOrientation({ yaw: currentYaw, pitch: currentPitch });
-                }
+            // Normalize yaw to 0-360
+            while (yawRef.current >= 360) yawRef.current -= 360;
+            while (yawRef.current < 0) yawRef.current += 360;
 
-                setOrientation({ yaw: currentYaw, pitch: currentPitch });
-            }
+            // Clamp pitch to reasonable range
+            pitchRef.current = Math.max(-90, Math.min(90, pitchRef.current));
+
+            setOrientation({
+                yaw: yawRef.current,
+                pitch: pitchRef.current
+            });
         });
 
-        return () => subscription.remove();
-    }, [initialOrientation]);
+        return () => {
+            subscription.remove();
+        };
+    }, []);
 
-    return {
-        orientation,
-        initialOrientation: initialOrientation || { yaw: 0, pitch: 0 }
-    };
+    return { orientation };
 };
