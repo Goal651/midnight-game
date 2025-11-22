@@ -12,7 +12,8 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "$(PRODUCT_NAME) needs access to your Camera for AR gameplay."
-      }
+      },
+      "bundleIdentifier": "com.wigothehacker.app"
     },
     "android": {
       "adaptiveIcon": {

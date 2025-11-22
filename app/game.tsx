@@ -133,6 +133,20 @@ export default function GameScreen() {
         return { x, y, isVisible };
     };
 
+    // Debug all visible targets
+    const visibleTargets = targets.map(t => ({
+        ...t,
+        ...projectToScreen(t.yaw, t.pitch)
+    })).filter(t => t.isVisible);
+
+    if (visibleTargets.length > 0) {
+        console.log(`🎯 Camera: yaw=${orientation.yaw.toFixed(0)}° pitch=${orientation.pitch.toFixed(0)}°`);
+        visibleTargets.forEach((t, i) => {
+            const deltaYaw = t.yaw - orientation.yaw;
+            console.log(`  Target${i}: yaw=${t.yaw.toFixed(0)}° → ΔYaw=${deltaYaw.toFixed(0)}° → screenX=${t.x.toFixed(0)}`);
+        });
+    }
+
     return (
         <View className="flex-1">
             <CameraView>
