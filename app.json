@@ -25,8 +25,6 @@
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "CAMERA",
-        "android.permission.CAMERA",
-        "CAMERA",
         "android.permission.CAMERA"
       ],
       "package": "com.wigothehacker.app"
@@ -55,7 +53,8 @@
           "cameraPermissionText": "$(PRODUCT_NAME) needs access to your Camera for AR gameplay.",
           "enableCodeScanner": false
         }
-      ]
+      ],
+      "expo-sensors"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -18,47 +18,31 @@ export const CameraView: React.FC<CameraViewProps> = ({ children }) => {
 
     if (!hasPermission) {
         return (
-            <View style={styles.container}>
-                <Text style={styles.permissionText}>Camera permission required</Text>
+            <View className="flex-1 bg-black justify-center items-center">
+                <Text className="text-white text-lg text-center mt-24">Camera permission required</Text>
             </View>
         );
     }
 
     if (!device) {
         return (
-            <View style={styles.container}>
-                <Text style={styles.permissionText}>No camera device found</Text>
+            <View className="flex-1 bg-black justify-center items-center">
+                <Text className="text-white text-lg text-center mt-24">No camera device found</Text>
             </View>
         );
     }
 
     return (
-        <View style={styles.container}>
+        <View className="flex-1 bg-black">
             <Camera
                 style={StyleSheet.absoluteFill}
                 device={device}
                 isActive={true}
             />
             {/* Overlay for targets and UI */}
-            <View style={styles.overlay}>
+            <View className="absolute inset-0">
                 {children}
             </View>
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#000',
-    },
-    permissionText: {
-        color: '#fff',
-        fontSize: 18,
-        textAlign: 'center',
-        marginTop: 100,
-    },
-    overlay: {
-        ...StyleSheet.absoluteFillObject,
-    },
-});

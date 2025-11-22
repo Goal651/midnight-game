@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -8,113 +8,34 @@ export default function GameOverScreen() {
     const { score } = useLocalSearchParams();
 
     return (
-        <View style={styles.container}>
+        <View className="flex-1">
             <LinearGradient
                 colors={['#1a2a6c', '#b21f1f', '#fdbb2d']}
-                style={styles.background}
+                className="flex-1 justify-center items-center"
             >
-                <View style={styles.content}>
-                    <Text style={styles.title}>GAME OVER</Text>
+                <View className="items-center p-5 w-full">
+                    <Text className="text-5xl font-bold text-white tracking-[4px] mb-10 shadow-lg shadow-black/75">GAME OVER</Text>
 
-                    <View style={styles.scoreContainer}>
-                        <Text style={styles.scoreLabel}>FINAL SCORE</Text>
-                        <Text style={styles.scoreValue}>{score || 0}</Text>
+                    <View className="bg-black/30 p-8 rounded-3xl items-center mb-16 w-4/5">
+                        <Text className="text-white/80 text-lg font-bold mb-2.5 tracking-widest">FINAL SCORE</Text>
+                        <Text className="text-white text-6xl font-bold shadow-md shadow-black/50">{score || 0}</Text>
                     </View>
 
                     <Pressable
-                        style={styles.button}
+                        className="bg-white px-10 py-5 rounded-[30px] shadow-md shadow-black/30 elevation-5 w-4/5 items-center mb-5"
                         onPress={() => router.replace('/game')}
                     >
-                        <Text style={styles.buttonText}>PLAY AGAIN</Text>
+                        <Text className="text-[#b21f1f] text-xl font-bold tracking-widest">PLAY AGAIN</Text>
                     </Pressable>
 
                     <Pressable
-                        style={[styles.button, styles.secondaryButton]}
+                        className="bg-transparent border-2 border-white px-10 py-5 rounded-[30px] w-4/5 items-center"
                         onPress={() => router.replace('/')}
                     >
-                        <Text style={[styles.buttonText, styles.secondaryButtonText]}>HOME</Text>
+                        <Text className="text-white text-xl font-bold tracking-widest">HOME</Text>
                     </Pressable>
                 </View>
             </LinearGradient>
         </View>
     );
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    background: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    content: {
-        alignItems: 'center',
-        padding: 20,
-        width: '100%',
-    },
-    title: {
-        fontSize: 48,
-        fontWeight: 'bold',
-        color: '#fff',
-        letterSpacing: 4,
-        marginBottom: 40,
-        textShadowColor: 'rgba(0, 0, 0, 0.75)',
-        textShadowOffset: { width: 0, height: 4 },
-        textShadowRadius: 10,
-    },
-    scoreContainer: {
-        backgroundColor: 'rgba(0, 0, 0, 0.3)',
-        padding: 30,
-        borderRadius: 20,
-        alignItems: 'center',
-        marginBottom: 60,
-        width: '80%',
-    },
-    scoreLabel: {
-        color: '#rgba(255, 255, 255, 0.8)',
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginBottom: 10,
-        letterSpacing: 2,
-    },
-    scoreValue: {
-        color: '#fff',
-        fontSize: 64,
-        fontWeight: 'bold',
-        textShadowColor: 'rgba(0, 0, 0, 0.5)',
-        textShadowOffset: { width: 0, height: 2 },
-        textShadowRadius: 5,
-    },
-    button: {
-        backgroundColor: '#fff',
-        paddingHorizontal: 40,
-        paddingVertical: 20,
-        borderRadius: 30,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 5,
-        elevation: 5,
-        width: '80%',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
-    buttonText: {
-        color: '#b21f1f',
-        fontSize: 20,
-        fontWeight: 'bold',
-        letterSpacing: 1,
-    },
-    secondaryButton: {
-        backgroundColor: 'transparent',
-        borderWidth: 2,
-        borderColor: '#fff',
-        shadowOpacity: 0,
-        elevation: 0,
-    },
-    secondaryButtonText: {
-        color: '#fff',
-    },
-});

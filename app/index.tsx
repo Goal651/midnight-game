@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from "react-native";
+import { View, Text, Pressable } from "react-native";
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -7,91 +7,29 @@ export default function Index() {
   const router = useRouter();
 
   return (
-    <View style={styles.container}>
+    <View className="flex-1">
       <LinearGradient
         colors={['#1a2a6c', '#b21f1f', '#fdbb2d']}
-        style={styles.background}
+        className="flex-1 justify-center items-center"
       >
-        <View style={styles.content}>
-          <Text style={styles.title}>MIDNIGHT</Text>
-          <Text style={styles.subtitle}>AR SHOOTING GALLERY</Text>
+        <View className="items-center p-5">
+          <Text className="text-5xl font-bold text-white mb-2.5 tracking-[4px] shadow-lg shadow-black/75">MIDNIGHT</Text>
+          <Text className="text-lg text-white/90 tracking-[2px] mb-16">AR SHOOTING GALLERY</Text>
 
-          <View style={styles.instructions}>
-            <Text style={styles.instructionText}>🎯 Find targets in your room</Text>
-            <Text style={styles.instructionText}>🔫 Tap to shoot them</Text>
-            <Text style={styles.instructionText}>⏱️ You have 30 seconds</Text>
+          <View className="bg-black/30 p-5 rounded-2xl mb-16 w-full">
+            <Text className="text-white text-lg mb-2.5 text-center">🎯 Find targets in your room</Text>
+            <Text className="text-white text-lg mb-2.5 text-center">🔫 Tap to shoot them</Text>
+            <Text className="text-white text-lg mb-2.5 text-center">⏱️ You have 30 seconds</Text>
           </View>
 
           <Pressable
-            style={styles.button}
+            className="bg-white px-10 py-5 rounded-[30px] shadow-md shadow-black/30 elevation-5"
             onPress={() => router.push('/game')}
           >
-            <Text style={styles.buttonText}>START GAME</Text>
+            <Text className="text-[#b21f1f] text-xl font-bold tracking-widest">START GAME</Text>
           </Pressable>
         </View>
       </LinearGradient>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  background: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  content: {
-    alignItems: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 48,
-    fontWeight: 'bold',
-    color: '#fff',
-    letterSpacing: 4,
-    marginBottom: 10,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: 0, height: 4 },
-    textShadowRadius: 10,
-  },
-  subtitle: {
-    fontSize: 18,
-    color: '#fff',
-    opacity: 0.9,
-    letterSpacing: 2,
-    marginBottom: 60,
-  },
-  instructions: {
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    padding: 20,
-    borderRadius: 15,
-    marginBottom: 60,
-    width: '100%',
-  },
-  instructionText: {
-    color: '#fff',
-    fontSize: 18,
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  button: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 40,
-    paddingVertical: 20,
-    borderRadius: 30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 5,
-  },
-  buttonText: {
-    color: '#b21f1f',
-    fontSize: 20,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-  },
-});

@@ -1,126 +1,77 @@
-import React from 'react';
-import { View, StyleSheet, Pressable, Dimensions } from 'react-native';
+
+import React, { useEffect } from 'react';
+import { View, Pressable, Dimensions } from 'react-native';
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
-    withRepeat,
+    withSpring,
     withTiming,
-    withSequence,
-    Easing,
+    runOnJS,
 } from 'react-native-reanimated';
 
 interface TargetProps {
     id: string;
-    x: number; // percentage 0-100
-    y: number; // percentage 0-100
+    x: number; // Screen X
+    y: number; // Screen Y
+    size: number;
     color: string;
     onHit: (id: string) => void;
 }
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const TARGET_SIZE = 80;
+export const Target: React.FC<TargetProps> = ({ id, x, y, size, color, onHit }) => {
+    const scale = useSharedValue(0);
+    const opacity = useSharedValue(1);
 
-export const Target: React.FC<TargetProps> = ({ id, x, y, color, onHit }) => {
-    // Animated values for movement
-    const translateX = useSharedValue(0);
-    const translateY = useSharedValue(0);
-    const scale = useSharedValue(1);
-
-    // Start floating animation
-    React.useEffect(() => {
-        // Gentle floating movement
-        translateX.value = withRepeat(
-            withSequence(
-                withTiming(20, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
-                withTiming(-20, { duration: 2000, easing: Easing.inOut(Easing.ease) })
-            ),
-            -1,
-            true
-        );
-
-        translateY.value = withRepeat(
-            withSequence(
-                withTiming(-15, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
-                withTiming(15, { duration: 1500, easing: Easing.inOut(Easing.ease) })
-            ),
-            -1,
-            true
-        );
-
-        // Pulse animation
-        scale.value = withRepeat(
-            withSequence(
-                withTiming(1.1, { duration: 800 }),
-                withTiming(1, { duration: 800 })
-            ),
-            -1,
-            true
-        );
-    }, [translateX, translateY, scale]);
-
-    const animatedStyle = useAnimatedStyle(() => ({
-        transform: [
-            { translateX: translateX.value },
-            { translateY: translateY.value },
-            { scale: scale.value },
-        ],
-    }));
+    useEffect(() => {
+        scale.value = withSpring(1, { damping: 12, stiffness: 90 });
+    }, []);
 
     const handlePress = () => {
-        onHit(id);
+        scale.value = withTiming(1.5, { duration: 200 });
+        opacity.value = withTiming(0, { duration: 200 }, () => {
+            runOnJS(onHit)(id);
+        });
     };
 
-    // Convert percentage to actual position
-    const leftPosition = (x / 100) * SCREEN_WIDTH - TARGET_SIZE / 2;
-    const topPosition = (y / 100) * SCREEN_HEIGHT - TARGET_SIZE / 2;
+    const animatedStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: scale.value }],
+        opacity: opacity.value,
+    }));
+
+    // Don't render if off screen
+    if (x < -size || x > Dimensions.get('window').width + size ||
+        y < -size || y > Dimensions.get('window').height + size) {
+        return null;
+    }
 
     return (
         <Animated.View
             style={[
-                styles.target,
                 {
-                    left: leftPosition,
-                    top: topPosition,
+                    position: 'absolute',
+                    left: x - size / 2,
+                    top: y - size / 2,
+                    width: size,
+                    height: size,
                     backgroundColor: color,
+                    borderRadius: size / 2,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 8,
+                    elevation: 8,
                 },
                 animatedStyle,
             ]}
         >
             <Pressable
                 onPress={handlePress}
-                style={styles.pressable}
+                className="w-full h-full rounded-full justify-center items-center"
             >
-                <View style={styles.innerCircle} />
+                <View className="w-[30px] h-[30px] rounded-full bg-white/50" />
             </Pressable>
         </Animated.View>
     );
 };
-
-const styles = StyleSheet.create({
-    target: {
-        position: 'absolute',
-        width: TARGET_SIZE,
-        height: TARGET_SIZE,
-        borderRadius: TARGET_SIZE / 2,
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 8,
-    },
-    pressable: {
-        width: '100%',
-        height: '100%',
-        borderRadius: TARGET_SIZE / 2,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    innerCircle: {
-        width: 30,
-        height: 30,
-        borderRadius: 15,
-        backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    },
-});
