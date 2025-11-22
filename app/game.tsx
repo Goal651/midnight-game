@@ -1,22 +1,21 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Pressable, Dimensions } from 'react-native';
-import { useRouter } from 'expo-router';
-import { Audio } from 'expo-audio';
-import { CameraView } from '../src/components/CameraView';
-import { Target } from '../src/components/Target';
-import { GameHUD } from '../src/components/GameHUD';
-import { Crosshair } from '../src/components/Crosshair';
-import { Weapon } from '../src/components/Weapon';
-import { useGameState } from '../src/hooks/useGameState';
-import { useTimer } from '../src/hooks/useTimer';
-import { useTargets } from '../src/hooks/useTargets';
-import { useOrientation } from '../src/hooks/useOrientation';
+import { router } from 'expo-router';
+import { Audio as ExpoAudio } from 'expo-av';
+import { CameraView } from '@/src/components/CameraView';
+import { Target } from '@/src/components/Target';
+import { GameHUD } from '@/src/components/GameHUD';
+import { Crosshair } from '@/src/components/Crosshair';
+import { Weapon } from '@/src/components/Weapon';
+import { useGameState } from '@/src/hooks/useGameState';
+import { useTimer } from '@/src/hooks/useTimer';
+import { useTargets } from '@/src/hooks/useTargets';
+import { useOrientation } from '@/src/hooks/useOrientation';
 
 const FOV = 70; // Field of view in degrees
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function GameScreen() {
-    const router = useRouter();
     const { score, incrementScore, gameState, startGame, endGame } = useGameState();
     const { targets, spawnTarget, removeTarget } = useTargets(gameState === 'playing');
     const { orientation } = useOrientation();
@@ -48,8 +47,8 @@ export default function GameScreen() {
     // Play sound
     const playHitSound = async () => {
         try {
-            const { sound } = await Audio.Sound.createAsync(
-                require('../assets/sounds/hit.mp3')
+            const { sound } = await ExpoAudio.Sound.createAsync(
+                require('@/assets/sounds/hit.mp3')
             );
             await sound.playAsync();
             // Auto-unload after playing
@@ -65,8 +64,8 @@ export default function GameScreen() {
 
     const playShootSound = async () => {
         try {
-            const { sound } = await Audio.Sound.createAsync(
-                require('../assets/sounds/shoot.mp3')
+            const { sound } = await ExpoAudio.Sound.createAsync(
+                require('@/assets/sounds/shoot.mp3')
             );
             await sound.playAsync();
             // Auto-unload after playing
@@ -110,42 +109,48 @@ export default function GameScreen() {
         }
     }, [gameState, handleGameOver]);
 
-    // Project world coordinates to screen coordinates
-    const projectToScreen = (targetYaw: number, targetPitch: number) => {
-        // Calculate angular difference between camera and target
-        let deltaYaw = targetYaw - orientation.yaw;
+    // Project 3D world position to 2D screen position
+    const projectToScreen = (targetX: number, targetY: number, targetZ: number, targetSize: number) => {
+        // Calculate relative position (target position - camera position)
+        const relX = targetX - orientation.x;
+        const relY = targetY - orientation.y;
+        const relZ = targetZ - orientation.z;
 
-        // Normalize to -180 to 180
-        while (deltaYaw > 180) deltaYaw -= 360;
-        while (deltaYaw < -180) deltaYaw += 360;
+        // Rotate relative position based on camera orientation
+        const yawRad = (orientation.yaw * Math.PI) / 180;
+        const pitchRad = (orientation.pitch * Math.PI) / 180;
 
-        const deltaPitch = targetPitch - orientation.pitch;
+        // Apply rotation around Y axis (yaw)
+        const rotatedX = relX * Math.cos(yawRad) + relZ * Math.sin(yawRad);
+        const rotatedZ = -relX * Math.sin(yawRad) + relZ * Math.cos(yawRad);
 
-        // Check if target is within field of view
-        const halfFOV = FOV / 2;
-        const isVisible = Math.abs(deltaYaw) < halfFOV && Math.abs(deltaPitch) < halfFOV;
+        // Apply rotation around X axis (pitch)
+        const rotatedY = relY * Math.cos(pitchRad) - rotatedZ * Math.sin(pitchRad);
+        const finalZ = relY * Math.sin(pitchRad) + rotatedZ * Math.cos(pitchRad);
 
-        // Map angular difference to screen position
-        // Center of screen = 0 degrees offset
-        const x = (deltaYaw / halfFOV) * (SCREEN_WIDTH / 2) + (SCREEN_WIDTH / 2);
-        const y = (-deltaPitch / halfFOV) * (SCREEN_HEIGHT / 2) + (SCREEN_HEIGHT / 2);
+        // Check if target is behind camera
+        if (finalZ <= 0.1) {
+            return { x: 0, y: 0, screenSize: 0, isVisible: false };
+        }
 
-        return { x, y, isVisible };
+        // Project to screen using perspective projection
+        const fov = (FOV * Math.PI) / 180;
+        const scale = (SCREEN_WIDTH / 2) / Math.tan(fov / 2);
+
+        const screenX = (rotatedX / finalZ) * scale + (SCREEN_WIDTH / 2);
+        const screenY = -(rotatedY / finalZ) * scale + (SCREEN_HEIGHT / 2);
+
+        // Calculate size based on distance
+        const screenSize = (targetSize / finalZ) * scale;
+
+        // Check if within FOV
+        const isVisible =
+            finalZ > 0.1 &&
+            screenX >= -screenSize && screenX <= SCREEN_WIDTH + screenSize &&
+            screenY >= -screenSize && screenY <= SCREEN_HEIGHT + screenSize;
+
+        return { x: screenX, y: screenY, screenSize, isVisible };
     };
-
-    // Debug all visible targets
-    const visibleTargets = targets.map(t => ({
-        ...t,
-        ...projectToScreen(t.yaw, t.pitch)
-    })).filter(t => t.isVisible);
-
-    if (visibleTargets.length > 0) {
-        console.log(`🎯 Camera: yaw=${orientation.yaw.toFixed(0)}° pitch=${orientation.pitch.toFixed(0)}°`);
-        visibleTargets.forEach((t, i) => {
-            const deltaYaw = t.yaw - orientation.yaw;
-            console.log(`  Target${i}: yaw=${t.yaw.toFixed(0)}° → ΔYaw=${deltaYaw.toFixed(0)}° → screenX=${t.x.toFixed(0)}`);
-        });
-    }
 
     return (
         <View className="flex-1">
@@ -153,7 +158,12 @@ export default function GameScreen() {
                 <Pressable className="absolute inset-0" onPress={handleMiss} />
 
                 {targets.map((target) => {
-                    const { x, y, isVisible } = projectToScreen(target.yaw, target.pitch);
+                    const { x, y, screenSize, isVisible } = projectToScreen(
+                        target.x,
+                        target.y,
+                        target.z,
+                        target.size
+                    );
 
                     if (!isVisible) return null;
 
@@ -163,7 +173,7 @@ export default function GameScreen() {
                             id={target.id}
                             x={x}
                             y={y}
-                            size={target.size}
+                            size={screenSize}
                             color={target.color}
                             onHit={handleTargetHit}
                         />

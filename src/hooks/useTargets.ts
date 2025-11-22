@@ -2,8 +2,9 @@ import { useState, useCallback } from 'react';
 
 export interface Target {
     id: string;
-    yaw: number;   // Horizontal angle in world space (0-360 degrees)
-    pitch: number; // Vertical angle in world space (-90 to 90 degrees)
+    x: number;      // World X position (meters)
+    y: number;      // World Y position (meters)
+    z: number;      // World Z position (meters)
     color: string;
     size: number;
 }
@@ -18,17 +19,26 @@ export const useTargets = (isPlaying: boolean) => {
 
         const id = Math.random().toString(36).substr(2, 9);
 
-        // Spawn targets in a 360-degree circle around the user
-        const yaw = Math.random() * 360;
+        // Spawn targets in a sphere around the player
+        // Radius: 3-5 meters
+        const radius = 3 + Math.random() * 2;
 
-        // Spawn at eye level with some variation (-20 to +20 degrees)
-        const pitch = (Math.random() * 40) - 20;
+        // Random angle in 360 degrees
+        const angle = Math.random() * Math.PI * 2;
+
+        // Height variation: -1m to +1m from eye level
+        const height = (Math.random() * 2) - 1;
+
+        // Convert spherical to Cartesian coordinates
+        const x = radius * Math.cos(angle);
+        const z = radius * Math.sin(angle);
+        const y = height;
 
         const colors = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#FF8C42', '#F7FFF7'];
         const color = colors[Math.floor(Math.random() * colors.length)];
-        const size = 60 + Math.random() * 40;
+        const size = 0.3 + Math.random() * 0.2; // 0.3-0.5 meters in world
 
-        const newTarget: Target = { id, yaw, pitch, color, size };
+        const newTarget: Target = { id, x, y, z, color, size };
 
         setTargets(prev => [...prev, newTarget]);
     }, [targets]);

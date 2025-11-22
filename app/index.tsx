@@ -1,10 +1,9 @@
 import React from 'react';
 import { View, Text, Pressable } from "react-native";
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function Index() {
-  const router = useRouter();
 
   return (
     <View className="flex-1">

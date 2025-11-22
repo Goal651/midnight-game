@@ -1,10 +1,9 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function GameOverScreen() {
-    const router = useRouter();
     const { score } = useLocalSearchParams();
 
     return (
